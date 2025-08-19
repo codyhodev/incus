@@ -1,0 +1,26 @@
+description: mint server container with bridged network
+config:
+  cloud-init.user-data: |
+    #cloud-config
+    users:
+      - name: linux
+        lock_passwd: True
+        plain_text_passwd: 1qaz@WSX
+        gecos: linux
+        groups: [adm, cdrom, dip, lxd, sudo]
+        sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        shell: /bin/bash
+    timezone: Asia/Shanghai
+
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: virbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    type: disk
+name: mint-server
+project: default

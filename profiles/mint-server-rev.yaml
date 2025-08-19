@@ -1,0 +1,195 @@
+description: mint server container with bridged network
+config:
+  cloud-init.user-data: |
+    #cloud-config
+    write_files:
+     - content: |
+        deb https://mirrors.ustc.edu.cn/linuxmint xia main upstream import backport
+        deb http://mirrors.aliyun.com/ubuntu noble main restricted universe multiverse
+        deb http://mirrors.aliyun.com/ubuntu noble-updates main restricted universe multiverse
+        deb http://mirrors.aliyun.com/ubuntu noble-backports main restricted universe multiverse
+        deb http://security.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
+       path: /etc/apt/sources.list.d/official-package-repositories.list
+       append: false
+     - content: |
+         Package: *
+         Pin: origin "build.linuxmint.com"
+         Pin-Priority: 700
+       path: /etc/apt/preferences.d/official-extra-repositories.pref
+       append: false
+     - content: |
+         Package: *
+         Pin: release o=linuxmint,c=upstream
+         Pin-Priority: 700
+       path: /etc/apt/preferences.d/official-package-repositories.pref
+       append: false
+     - path: /opt/firstboot.sh
+       content: |
+         #!/bin/sh
+
+         set -e
+         
+         if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+           rm /etc/apt/preferences.d/ubuntu-pro-esm-*
+           rm /etc/apt/sources.list.d/ubuntu.sources
+           rm /opt/firstboot.sh
+           exit 0
+         fi
+         exit -1
+
+     - path: /etc/systemd/system/firstboot.service
+       content: |
+         [Unit]
+         Description=One time boot script
+         After=dbus.service
+         After=display-manager.service
+         ConditionPathExists=/opt/firstboot.sh
+
+         [Service]
+         Type=oneshot
+         ExecStart=/opt/firstboot.sh
+         RestartSec=10s
+         Restart=on-failure
+
+         [Install]
+         WantedBy=default.target
+     - path: /opt/apt.sh
+       content: |
+         #!/bin/bash
+         echo "wait until /opt/firstboot.sh not exists..."
+         while [ -e /opt/firstboot.sh ]; do
+          echo "retry after 1 seconds .."
+          sleep 1
+         done
+         apt-get update
+         apt-get -y install nano htop wget curl
+         rm -f /opt/apt.sh
+     - path: /usr/share/keyrings/linuxmint-keyring.gpg
+       encoding: b64
+       content: |
+         LS0tLS1CRUdJTiBQR1AgUFVCTElDIEtFWSBCTE9DSy0tLS0tClZlcnNpb246IEdudVBHIHYxCgpt
+         UUlOQkZkRWg5b0JFQUMyektsMXkyS2s5NzNXOVpRdnNoRGF3QzhEdS8yU3ZsM1Qwald4RFJ1Vkl0
+         RVlDazZpCk1ybG4zeVlVVVpFWFhpWDNDWXNFZlNIOTBZa2ZOR05mS3JlVXBPbTB3V2N3UzJaVEhh
+         SFNad2JOV3JiMVRVeWkKTDRIZUIyY1Z2cWRSQjQ1N0lNbXRuUTV3d2ZVTk9CcVFXVjZSNnZFVCt6
+         dlFZbDgxYnBKUTdUUFV4UG1OT3FQSQpma2tVckxCcXhJS0hFai9CdUhFdXRRcjVDZE92RmtDYW9F
+         V0ZGN0M4dEs4Nmo5eGtBVk0zeUtPYWl6ZFl6bnFyCjR1L2RiVWhIcG0zUDNNRGFWSXBnRGVSMGtp
+         SkZjeGVPRjVYSDNxMzJRcWlEQ2VSbWlua1lkaGlubm10dXlDbEsKa01FRmZGWmd2R0F3VVFodXMr
+         dlFqSHpoVjZpa0lCQXQzZGdvOHlGUVJJN2pvOEVkNTBwQ3JmaXZUYTBNeEUvNgpRVXVvbGYxaUw0
+         Q1BwQmpvak5GaUt4b0hGM3hyY05XTCtJbjI0c1FZdkhlNDNKZkJpTS9nTXpNUDFKeGxiV2FPCnhO
+         UFlqU1piMWhOZWR4c2pBeHhxdnBpakFFREREQStuZVdpdmVwTmU5b285c05qQ2ZxYjNURVorbDhQ
+         akFINFYKTEw5bWtqUG1GRmhodWk4UGdKRHY3VlRSWUg5TVJITkIrUFNUT0NwSFZHeldjYWlMK2Jp
+         RG1FMXU2K1d6eG1TcApLMnA5QndxRkZ5aWtjMFdMdFcyOFpnd3ZoL3UwYlYvTVpvZG9tSk5lbllz
+         bzZQV0NJUlVzUFlxcUhlTldFeVBaCllIUllwV0cxeE1keU1tNVNFaTh3TUd2Q3pHRnNjNU1jSjJ5
+         V3hVWXpNUzdmVENIb1dzWlU0eEtOZlFBUkFRQUIKdERaTWFXNTFlQ0JOYVc1MElGSmxjRzl6YVhS
+         dmNua2dVMmxuYm1sdVp5QkxaWGtnUEhKdmIzUkFiR2x1ZFhodAphVzUwTG1OdmJUNkpBamNFRXdF
+         S0FDRUZBbGRFaDlvQ0d3TUZDd2tJQndNRkZRb0pDQXNGRmdJREFRQUNIZ0VDCkY0QUFDZ2tRcG1G
+         aENVVWJ1L0xVSkEvL2NLTGJlOXR2ZXdrbGNlTDl6YURGR0FCeHJZZ1JjUlZEQmZ3VmRqd1IKMkQz
+         VnZLNVpoNnI4YldnRzh5WGZvMGNyQWJZNXV0cEJNUWY3aWx3MUJDSWlGdDNOVm54VGErcTg3alZn
+         QXNlRQphV1loODFvZEN4WFNsbkY5Z3hJd1A1WkUvMXoxNkpIYytlcGNmdDc3UXFHUG9LRFd3M1cy
+         N0R2cWM2WVpYd0gzClBMT2o3MVhZQ1FLSi90eUU3YzJ6OFBOOFZWZ2JVVFNMZk5nendSVlFyWWdw
+         WTZwQUN2Mm5mNS9EditETlcrR3kKUW4yeTVyZ0xxS1BWTm5UeGdxLzZUZnBjQjRIU0tETm1VQ0p0
+         eW5LaHNhTGxsdG1iQmFJS2l1VERVMlVIeVh4eAoveVR3c0oxVXV2TDhMTjhUSVZtem9Fb2VMeXA1
+         V1d2Qm1vN2tMV1B1RDQxWmhVdVFNenFGcTFWS1RFK2tsNVA5CmpTSzR2ODFYc3pSb2h1bTRRajFX
+         UUNDMXJlNGIrVWhMNy9CdFVubk9NWTJEclIyMDJ1Rmd6d1BWWlBXRlBybmkKaXdNdzFuL09HRHpn
+         WWlJKzRZMklTeTJtVG1palkwbDdkenF4VjcrdkR6RDBqQU5xSmtobmRHN0Q4VzNIOGwvMgpMamxh
+         SXVzUW9ZVytiV0NJVjB3b1ZPRE8wYmRDWHV6TU0yYlhZS0lBSTJ6U2JHRzFDZUtEem5mOUQxUUQx
+         REp2Cm5Bb094VkdlNTdVM3p5QzBkSFAyenZXQit2OGxLci8zc3U1SUJOV1FQejZRT3hjU3paN0R0
+         d2tyTG9ucmwzZFEKMy9HUnFYYkIrK1dpZ01sTmFWNFNMZnRsUit5akxLa0ZhWXU4VEx4NWtEMUZ1
+         b2s0eDhENFNiNW5DWkpNRXRGQwpaa201QWcwRVYwU0gyZ0VRQU1GaHEwaE50LzhJN3NibmpBZTJh
+         dENNTWpFclRnNFhUZVdkcnhER0RvdHdlcEhYClYzOXNjUXRScjR4WFdZSW95cm9mWG42ckszNk1C
+         WFR4ZkJib1N4ajUrUmthUGtCZVkrN3dQYnlJVzZMR0t4ZGYKVnloSk1vWGZiWGh4R2pjSjFIUG9y
+         REhFcDV2TmU2M2lKS1VmUWM2K1Q4SzJVQkhGOU41VTQ1RWYzT2xUSzVtegpKMjNkLzB5R2YwelNi
+         eWQxVlZqbFUzQWhqRkFjcnA4UlNVTmZWL1NZdTJqM0doa0p0eFVUSE5oU3dLU2Izdk1iCnh6QzlU
+         bDViUUUwbHlIV3RhQllFeTJZMEtQS2t4WElucnYwMUx0TU1RZlBJWk1ONWIrOVJMWk5BYUdlNW13
+         dTAKWVhiOVZwWHM5dmozTXBwTE5UWm1FeWV3NTVmektOMGdIY0RvakxDeDU1Q1Fua2hxdFVqU2h0
+         YlJkY09GNXpNNQpQWmo3T0tMTjhoWjNxeDNSeDBEeitDcCtPZVlQTmRyS3lDZG42eFNhVDJyNnN3
+         Q1JvUU1YaUZEeGJRWmd5S2pYCk54ZlZkam5BY3FzektEcUlla1d6R25ycWRidDE5bGI1Wm5vKy8x
+         UFNxejlTbzd3aGtueU5rY0I5TWs5TG5kam4KYi8yVWR2Mmp3aEVKMERHSTNMbnZmL1N0MXlJb1Jn
+         dFYzamRFSUs4ejhRcHNwSUhtVGJPSzNEam1HVTlQZ0lMMgpVdTdvOW5uem9xU2JXbjRhZ0tVYkJV
+         ZWQzbmw1ZWh0M25IYXo5ZTQwb3RUa2FEcDFIcllUVTNSd3Bva0haK0hmCmovYi9LYzZCZkdTQzhp
+         R0J4blZoZjZ6ancvZVUxSzZPbWlrN0pZY2JMNU5LS1hwMzdiejhnNWpEN2VyTEFCRUIKQUFHSkFo
+         OEVHQUVLQUFrRkFsZEVoOW9DR3d3QUNna1FwbUZoQ1VVYnUvSXo5QkFBaEk3blRKRlFpSzhNcTRT
+         UgpMNUJ4NG1UQW53enIzNlV2WXBlUVA3VjliQjI0TkVZZlh5Sy9QbGs5VG9yYWNhMldhdVRKdkxY
+         eGt4NVVXZDYwCis0eUk3MXhTQUMycWptT1ZTd3BVZmtJWElVVFlSaHZjWnkzeFNOcHBVV1ltaTFC
+         OG84OVhEYVZTZmd5ajkyemIKS0J5eUxleGhIRHh4bGVhcHliaVoyekFrZ01wK0VWb1VwdGJrV1ZN
+         K3pxRUJxVVpOK2twWkk1QmpPMWU0Z2VVMQpKbTUvL2RYMHV0aDZDWHpxQW5keHRKeGJmQnFvNGlF
+         azRZSmI4SkpkdXNCWUpWQmFBOVpRbXpid2F5SUxWODI1CnBEa1BHZDQycW0xT20zdnp6YUdWY094
+         Z291Skc3UGxiUFU4amVDTlRtR01CTjJJK1VIcVNGaVdteWQ1OEhUNloKdVhwRU5OR1MwNFczZlVV
+         TTQrZHczNTEveGgzN0RKaW5ENmdhNG9VTjhYaWpJSGFaTWUvZTdodmRBblNxNi9YOApVOGd0NVp1
+         R1VvNFZPVVJNNjB0Y2JRUFpTNHEydGE1ejJBOFg1T1lnOGpWcW9wN1JOWHNhdHFrZ3NXMkgzSjhX
+         CmZvaGdJN3hGYTZvOVlrbitDbmxOWGdROG14VzJvRklHS01rbG9YdmlseTcwTE1zZkNuU0JZc0g3
+         cEh4KzRIOHkKRDFkK1ZoYjAyaGdNQTBKWEw1TDl3RnRLMk94bG1PRkZ6MlRYT3IzSW9tV3ZjSGVK
+         dDladDl6L0tyUENOaHQ2Tgp3SlBSeWhjcmtwSUtpSkVRS3RhaWZNWjdaMTRTLzZYV2F0SUZiUmd4
+         SjhmbndhQjdXTElmSVNOWHNVVGZLTXVICnZ3c1FDa1hkN1JjTUtGMUtJT0dWbm1DbEYxZz0KPWpJ
+         WUgKLS0tLS1FTkQgUEdQIFBVQkxJQyBLRVkgQkxPQ0stLS0tLQo=   
+     - path: /etc/apt/trusted.gpg.d/linuxmint-keyring.gpg
+       encoding: b64
+       content: |
+         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
+         nmClF1g=
+      
+    users:
+      - name: linux
+        lock_passwd: True
+        plain_text_passwd: 1qaz@WSX
+        gecos: linux
+        groups: [adm, cdrom, dip, lxd, sudo]
+        sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        shell: /bin/bash
+    timezone: Asia/Shanghai
+    runcmd:
+     - [chmod, +x, /opt/firstboot.sh]
+     - [systemctl, daemon-reload]
+     - [systemctl, enable, firstboot.service, --now]
+     - [chmod, +x, /opt/apt.sh]
+     - [sh, /opt/apt.sh]
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: virbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    type: disk
+name: mint-server-rev
+project: default

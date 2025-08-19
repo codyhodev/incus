@@ -1,0 +1,41 @@
+description: Mint desktop container with bridged network and x11
+config:
+  cloud-init.user-data: |
+    #cloud-config
+    users:
+      - name: linux
+        lock_passwd: True
+        gecos: linux
+        groups: [adm, cdrom, dip, lxd, sudo]
+        sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        shell: /bin/bash
+    packages:
+      - dbus
+      - dbus-x11
+      - ibus
+      - ibus-table-wubi
+      - im-config
+    timezone: Asia/Shanghai
+    runcmd:
+      - im-config -n ibus
+
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: virbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    type: disk
+  x11:
+    path: /tmp/.X11-unix/X0
+    source: /tmp/.X11-unix/X0
+    type: disk
+  gpu:
+    gid: "1000"
+    type: gpu
+    uid: "1000"
+name: mint-desktop
+project: default
