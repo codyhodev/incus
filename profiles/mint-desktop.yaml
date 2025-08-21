@@ -1,6 +1,6 @@
 description: mint desktop container with bridged network
 config:
-  raw.idmap:
+  raw.idmap: |
     both 1000 1000
   nvidia.runtime: true
   nvidia.driver.capabilities: all
@@ -48,15 +48,22 @@ config:
          rm /etc/apt/sources.list.d/ubuntu.sources
 
          apt-get update
-         apt-get -y install nano htop wget curl openssh-server fonts-liberation fonts-noto-cjk --no-install-recommends
+         apt-get -y install nano htop wget curl openssh-server fonts-liberation fonts-noto-cjk \
+         fcitx5 fcitx5-frontend-all fcitx5-config-qt fcitx5-table fcitx5-table-wubi98  \
+         dbus-x11 \
+         --no-install-recommends
 
          rm -f /opt/firstboot.sh
          exit 0
          
-     - path: /etc/profile.d/x11.sh
+     - path: /etc/profile.d/env-desktop.sh
        content: |
          export DISPLAY=:0
-
+         export GTK_IM_MODULE=fcitx
+         export QT_IM_MODULE=fcitx
+         export XMODIFIERS="@im=fcitx"
+         fcitx5 -d --replace  --disable=wayland,xim >/dev/null 2>&1
+         
      - path: /usr/share/keyrings/linuxmint-keyring.gpg
        encoding: b64
        content: |
