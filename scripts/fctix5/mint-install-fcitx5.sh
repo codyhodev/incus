@@ -6,7 +6,7 @@ if [ "$1" = "" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CAHCE_DIR=$SCRIPT_DIR/fcitx5_cache
+CAHCE_DIR=$SCRIPT_DIR/cache
 
 mkdir -p $CAHCE_DIR
 
