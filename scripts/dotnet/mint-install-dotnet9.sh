@@ -23,22 +23,20 @@ cat > $CAHCE_DIR/dotnet.sh << EOF
 	export PATH=\$PATH:\$HOME/.dotnet_home
 EOF
 
-rm -f $CAHCE_DIR/install-dotnet9.sh
-cat > $CAHCE_DIR/install-dotnet9.sh << EOF
+rm -f $CAHCE_DIR/install.sh
+cat > $CAHCE_DIR/install.sh << EOF
+    cd ~/dotnet9
 	mkdir -p \$HOME/.dotnet_home && tar zxf $PKG  -C \$HOME/.dotnet_home
 	if [ ! -f /etc/profile.d/dotnet.sh ];then
 		sudo cp dotnet.sh /etc/profile.d/
 	fi
-	rm -f $PKG
-	rm -f install-dotnet9.sh
-	rm -f dotnet.sh
+	rm -rf ~/dotnet9
 EOF
-chmod +x $CAHCE_DIR/install-dotnet9.sh
+chmod +x $CAHCE_DIR/install.sh
 
-incus file push $CAHCE_DIR/install-dotnet9.sh $1/home/linux/
-incus file push $CAHCE_DIR/dotnet.sh $1/home/linux/
-incus file push $CAHCE_DIR/$PKG $1/home/linux/
+for file in $CAHCE_DIR/*
+do
+	incus file push $file $1/home/linux/dotnet9/ -p
+done
 
-incus exec $1 -- su - linux /home/linux/install-dotnet9.sh
-
-rm -rf $CAHCE_DIR
+incus exec $1 -- su - linux /home/linux/dotnet9/install.sh
