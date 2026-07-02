@@ -1,0 +1,138 @@
+description: archlinux gui profile
+config:
+  raw.idmap: |
+    both 1000 1000
+  boot.autostart: false
+  boot.host_shutdown_action: stop
+  cloud-init.user-data: |
+    #cloud-config
+    write_files:
+      - path: /etc/profile.d/cloud-init.sh
+        content: |
+          #!/bin/bash
+          export DISPLAY=:0
+          export LANG=zh_CN.UTF-8
+          export LANGUAGE=zh_CN:en_US
+          export XDG_RUNTIME_DIR="/run/user/$(id --user)"
+          #export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+          export XDG_CURRENT_DESKTOP=gtk
+          export XDG_SESSION_DESKTOP=gtk
+          export GTK_IM_MODULE=fcitx
+          export QT_IM_MODULE=fcitx
+          export QT4_IM_MODULE=fcitx
+          export XMODIFIERS="@im=fcitx"
+          export INPUT_METHOD=fcitx
+          export NO_AT_BRIDGE=1
+      - path: /etc/pacman.d/mirrorlist
+        content: |
+          Server = http://mirrors.aliyun.com/archlinux/$repo/os/$arch
+          Server = https://mirrors.ustc.edu.cn/archlinux/$arch
+          Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/$arch
+      - path: /etc/pacman.conf
+        content: |
+          [archlinuxcn]
+          Server = https://mirrors.ustc.edu.cn/archlinuxcn/$arch
+          Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
+          Server = https://mirrors.hit.edu.cn/archlinuxcn/$arch
+          Server = https://repo.huaweicloud.com/archlinuxcn/$arch
+        append: true
+      - path: /usr/lib/systemd/user/fcitx.service
+        content: |
+          [Unit]
+          Description=Fcitx Input Method
+
+          After=startx.service
+          Wants=startx.service
+
+          [Service]
+          Type=simple
+          #ExecStartPre=xprop -root -remove XIM_SERVERS
+          ExecStart=fcitx5 -D --replace --disable=wayland
+          ExecStop=killall fcitx5
+          Restart=on-failure
+          RestartSec=5
+          StartLimitBurst=5
+
+          [Install]
+          WantedBy=default.target
+      - path: /usr/lib/systemd/user/startx.service
+        content: |
+          [Unit]
+          Description=StartX
+
+          [Service]
+          Type=simple
+          ExecStartPre=systemctl --user import-environment DISPLAY LANG XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP
+          ExecStart=dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.ListNames
+          ExecStartPost=systemctl --user show-environment 
+
+          Restart=on-failure
+          RestartSec=5
+          StartLimitBurst=5
+
+          Environment="DISPLAY=:0"
+          Environment="LANG=zh_CN.UTF-8"
+          Environment="XDG_CURRENT_DESKTOP=gtk"
+          Environment="XDG_SESSION_DESKTOP=gtk"
+
+          [Install]
+          WantedBy=default.target
+    runcmd:
+      - |
+        echo zh_CN.UTF-8 UTF-8 >> /etc/locale.gen
+        locale-gen
+        pacman-key --lsign-key "farseerfc@archlinux.org"
+        yes | pacman -S archlinuxcn-keyring
+        yes | pacman -S yay
+        systemctl mask tmp.mount
+        systemctl enable dbus
+        mkdir -p /etc/systemd/user/default.target.wants
+        ln -s /usr/lib/systemd/user/fcitx.service /etc/systemd/user/default.target.wants/fcitx.service
+        ln -s /usr/lib/systemd/user/startx.service /etc/systemd/user/default.target.wants/startx.service
+        loginctl enable-linger linux
+    packages:
+      - git
+      - base-devel 
+      - noto-fonts 
+      - noto-fonts-cjk 
+      - wqy-microhei
+      - ttf-dejavu
+      - ttf-liberation
+      - xdg-desktop-portal
+      - xdg-desktop-portal-gtk
+      - fcitx5
+      - fcitx5-chinese-addons
+      - fcitx5-configtool
+      - fcitx5-gtk
+      - htop
+    users:
+      - name: linux
+        lock_passwd: True
+        plain_text_passwd: 1qaz@WSX
+        gecos: linux
+        groups: [sudo,video,render]
+        sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        shell: /bin/bash
+    timezone: Asia/Shanghai
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: virbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    type: disk
+  x11:
+    path: /tmp/.X11-unix/X0
+    source: /tmp/.X11-unix/X0
+    type: disk
+    shift: true
+  gpu0:
+    gputype: physical
+    pci: '0000:00:02.0'
+    type: gpu
+    gid: 984
+name: arch-gui
+project: default
