@@ -1,0 +1,32 @@
+description: xmint gui container
+config:
+  raw.idmap: |
+    both 1000 1000
+  cloud-init.user-data: |
+    #cloud-config
+    timezone: Asia/Shanghai  
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: virbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    type: disk
+  x11:
+    path: /tmp/.X11-unix/X0
+    source: /tmp/.X11-unix/X0
+    type: disk
+  pulse:
+    path: /tmp/run/user/1000/pulse
+    source: /run/user/1000/pulse
+    type: disk
+  gpu0:
+    gputype: physical
+    pci: '0000:00:02.0'
+    type: gpu
+    gid: 992
+name: xmint
+project: default

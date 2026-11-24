@@ -1,0 +1,20 @@
+[Unit]
+Description=xmint-linger
+
+[Service]
+Type=simple
+ExecStartPre=systemctl --user import-environment DISPLAY LANG XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP
+ExecStart=dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.ListNames
+ExecStartPost=systemctl --user show-environment 
+
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+
+Environment="DISPLAY=:0"
+Environment="LANG=zh_CN.UTF-8"
+Environment="XDG_CURRENT_DESKTOP=gtk"
+Environment="XDG_SESSION_DESKTOP=gtk"
+
+[Install]
+WantedBy=default.target

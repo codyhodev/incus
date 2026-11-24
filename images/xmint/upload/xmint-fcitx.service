@@ -1,0 +1,15 @@
+[Unit]
+Description=xmint-fcitx
+After=xmint-linger.service
+Wants=xmint-linger.service
+
+[Service]
+Type=simple
+ExecStart=fcitx -D --replace --disable=wayland
+ExecStop=killall fcitx
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+
+[Install]
+WantedBy=default.target
